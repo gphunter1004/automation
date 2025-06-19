@@ -21,9 +21,31 @@ type SimpleTimePattern struct {
 	HourIndex   int
 }
 
-// GetDateTimePatterns 공통 날짜/시간 패턴들을 반환
 func GetDateTimePatterns() []DateTimePattern {
 	return []DateTimePattern{
+		// 🆕 새로운 패턴 추가 - YYYY.MM.DDHH:MM:SS (우선순위 높음)
+		{
+			Regex:       regexp.MustCompile(`(\d{4})\.(\d{2})\.(\d{2})(\d{2}):(\d{2}):(\d{2})`),
+			Description: "YYYY.MM.DDHH:MM:SS",
+			YearIndex:   1,
+			MonthIndex:  2,
+			DayIndex:    3,
+			HourIndex:   4,
+			MinuteIndex: 5,
+			SecondIndex: 6,
+		},
+		// 🆕 새로운 패턴 추가 - YYYY.MM.DDHH:MM (분까지만)
+		{
+			Regex:       regexp.MustCompile(`(\d{4})\.(\d{2})\.(\d{2})(\d{2}):(\d{2})`),
+			Description: "YYYY.MM.DDHH:MM",
+			YearIndex:   1,
+			MonthIndex:  2,
+			DayIndex:    3,
+			HourIndex:   4,
+			MinuteIndex: 5,
+			SecondIndex: -1,
+		},
+		// 기존 패턴들 (우선순위 순서대로)
 		{
 			Regex:       regexp.MustCompile(`(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{1,2}):\s*(\d{1,2}):\s*(\d{1,2})`),
 			Description: "YYYY. M. D. HH:MM:SS",
@@ -209,19 +231,21 @@ func GetExistingDatePatterns() []*regexp.Regexp {
 
 // PatternPriority 패턴 우선순위 정의 (자주 사용되는 패턴을 앞에)
 var PatternPriority = map[string]int{
-	"YY.MM.DD HH:MM:SS":    1, // 가장 일반적
-	"YY.MM.DD HH:MM":       2,
-	"YY.MM.DD":             3,
-	"YYYY. M. D. HH:MM:SS": 4,
-	"YYYY. M. D. HH:MM":    5,
-	"YYYY. M. D":           6,
-	"YYYY.MM.DD":           7,
-	"YY.MM.DD I HH:MM:SS":  8,
-	"YY.MM.DDHH:MM":        9,
-	"YYYY-MM-DD HH:MM:SS":  10, // ISO 8601
-	"YYYY-MM-DD":           11,
-	"YYYY/MM/DD HH:MM:SS":  12,
-	"YYYY/MM/DD":           13,
+	"YYYY.MM.DDHH:MM:SS":   1, // 🆕 새로운 패턴 최우선
+	"YYYY.MM.DDHH:MM":      2, // 🆕 새로운 패턴 (분까지)
+	"YY.MM.DD HH:MM:SS":    3, // 기존 가장 일반적
+	"YY.MM.DD HH:MM":       4,
+	"YY.MM.DD":             5,
+	"YYYY. M. D. HH:MM:SS": 6,
+	"YYYY. M. D. HH:MM":    7,
+	"YYYY. M. D":           8,
+	"YYYY.MM.DD":           9,
+	"YY.MM.DD I HH:MM:SS":  10,
+	"YY.MM.DDHH:MM":        11,
+	"YYYY-MM-DD HH:MM:SS":  12, // ISO 8601
+	"YYYY-MM-DD":           13,
+	"YYYY/MM/DD HH:MM:SS":  14,
+	"YYYY/MM/DD":           15,
 }
 
 // ValidateDateTime 날짜/시간 유효성 검증 함수

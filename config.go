@@ -15,7 +15,7 @@ const (
 	DEFAULT_OCR_API_URL     = "https://xlqf1p9tsl.apigw.ntruss.com/custom/v1/43074/fd2e3084b0aedaa21b114b92ed8d5b021e1f2c88b9eb7caea4b7e4b602aa85ea/infer"
 	DEFAULT_SERVER_PORT     = "3000"
 	DEFAULT_UPLOAD_LIMIT_MB = 50
-	DEFAULT_MAX_FILES       = 10
+	DEFAULT_MAX_FILES       = 5
 	DEFAULT_OCR_TIMEOUT     = 60
 	DEFAULT_ATTR_CD         = "8A" // 신용카드매출전표(개인)
 )
