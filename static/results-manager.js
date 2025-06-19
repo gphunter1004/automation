@@ -45,6 +45,7 @@ const ResultsManager = {
         const columns = [
             this._createFileNameCell(result),
             this._createCategoryCell(result, index),
+            this._createUsageTimeCell(result),
             this._createRemarkCell(result, index),
             this._createPurposeCell(result, index),
             this._createAmountCell(result, index),
@@ -86,6 +87,21 @@ const ResultsManager = {
         });
         
         cell.appendChild(select);
+        return cell;
+    },
+    
+    // 사용시간 셀 (표시 전용, 편집 불가)
+    _createUsageTimeCell(result) {
+        const cell = document.createElement('td');
+        cell.className = 'usage-time-cell';
+        
+        const timeInfo = result.originalIssueDate;
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'time-display';
+        timeSpan.textContent = timeInfo || '-';
+        
+        cell.appendChild(timeSpan);
         return cell;
     },
     
@@ -199,7 +215,7 @@ const ResultsManager = {
         result.remark = newRemark;
         
         // UI 업데이트
-        const remarkInput = document.querySelector(`#resultsTable tbody tr:nth-child(${index + 1}) td:nth-child(3) input`);
+        const remarkInput = document.querySelector(`#resultsTable tbody tr:nth-child(${index + 1}) td:nth-child(4) input`);
         if (remarkInput) {
             remarkInput.value = newRemark;
         }

@@ -217,22 +217,33 @@ func convertOCRResults(ocrResults []*SingleImageOCRResultWithCategory, userName 
 		amount := ocrServiceInstance.CalculateAmount(image.Fields)
 		amount = excelService.cleanAmountText(amount)
 
-		issueDate := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용일")
-		issueDate = excelService.convertDateFormat(issueDate)
+		// 원본 사용일 (시간 정보 포함) 저장 - 표준 형식으로 변환
+		originalIssueDate := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용일")
+		formattedOriginalIssueDate := formatDateTimeToStandard(originalIssueDate)
+
+		// 변환된 사용일 (YYYYMMDD 형식)
+		issueDate := excelService.convertDateFormat(originalIssueDate)
 
 		payDate := excelService.calculatePaymentDate()
 
 		// 비고 생성
 		remark := generateRemark(result, userName, metadata[result.SingleImageOCRResult.ImageIndex], issueDate, excelService)
 
+		// 시간 기반 카테고리 조정 로그 출력 (조정된 상태)
+		log.Printf("📋 최종 카테고리: %s (%s) - 파일: %s",
+			excelService.getCategoryLabel(result.Category),
+			result.Category,
+			result.SingleImageOCRResult.ImageName)
+
 		results = append(results, OCRResult{
-			FileName:  result.SingleImageOCRResult.ImageName,
-			Category:  result.Category,
-			Remark:    remark,
-			Purpose:   purpose,
-			Amount:    amount,
-			IssueDate: issueDate,
-			PayDate:   payDate,
+			FileName:          result.SingleImageOCRResult.ImageName,
+			Category:          result.Category, // 시간 기반으로 조정된 카테고리
+			Remark:            remark,
+			Purpose:           purpose,
+			Amount:            amount,
+			IssueDate:         issueDate,
+			PayDate:           payDate,
+			OriginalIssueDate: formattedOriginalIssueDate, // 표준 형식으로 변환된 원본 사용일
 		})
 	}
 

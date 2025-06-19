@@ -137,13 +137,14 @@ type OCRProcessResponse struct {
 }
 
 type OCRResult struct {
-	FileName        string `json:"fileName"`
-	Category        string `json:"category"`
-	Remark          string `json:"remark"`
-	Purpose         string `json:"purpose"`
-	Amount          string `json:"amount"`
-	IssueDate       string `json:"issueDate"`
-	PayDate         string `json:"payDate"`
-	BusinessContent string `json:"businessContent,omitempty"` // 국내출장 전용
-	BusinessPurpose string `json:"businessPurpose,omitempty"` // 국내출장 전용
+	FileName          string `json:"fileName"`
+	Category          string `json:"category"`
+	Remark            string `json:"remark"`
+	Purpose           string `json:"purpose"`
+	Amount            string `json:"amount"`
+	IssueDate         string `json:"issueDate"`
+	PayDate           string `json:"payDate"`
+	OriginalIssueDate string `json:"originalIssueDate"`         // 원본 사용일 (시간 정보 포함)
+	BusinessContent   string `json:"businessContent,omitempty"` // 국내출장 전용
+	BusinessPurpose   string `json:"businessPurpose,omitempty"` // 국내출장 전용
 }

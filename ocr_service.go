@@ -76,6 +76,11 @@ func (s *OCRService) ProcessMultipleImagesAsyncWithCategory(imageFiles []ImageFi
 				return
 			}
 
+			// ⏰ 시간 기반 카테고리 자동 조정 (핵심 로직)
+			originalCategory := imgFileWithCategory.Category
+			issDT := s.ExtractFieldValue(result.Fields, "사용일")
+			adjustedCategory := s.adjustCategoryByTime(originalCategory, issDT)
+
 			log.Printf("✅ 이미지 %d (%s) 처리 완료", index+1, imgFileWithCategory.ImageFile.Filename)
 			results[index] = &SingleImageOCRResultWithCategory{
 				SingleImageOCRResult: SingleImageOCRResult{
@@ -84,7 +89,7 @@ func (s *OCRService) ProcessMultipleImagesAsyncWithCategory(imageFiles []ImageFi
 					Response:   result,
 					Error:      nil,
 				},
-				Category:        imgFileWithCategory.Category,
+				Category:        adjustedCategory, // 조정된 카테고리 사용
 				Remarks:         imgFileWithCategory.Remarks,
 				BusinessContent: imgFileWithCategory.BusinessContent,
 				Purpose:         imgFileWithCategory.Purpose,
@@ -116,6 +121,92 @@ func (s *OCRService) ProcessMultipleImagesAsyncWithCategory(imageFiles []ImageFi
 	}
 
 	return results, nil
+}
+
+// 시간에 따른 카테고리 자동 재지정
+func (s *OCRService) adjustCategoryByTime(category, issueDateTime string) string {
+	// 국내출장은 변경하지 않음
+	if category == "6320" {
+		return category
+	}
+
+	// 환경변수로 기능 비활성화된 경우
+	if !isTimeCategoryEnabled() {
+		return category
+	}
+
+	// 시간 추출
+	hour := s.extractHourFromDateTime(issueDateTime)
+	if hour == -1 {
+		// 시간 정보가 없으면 원래 카테고리 유지
+		log.Printf("시간 정보가 없어 카테고리 유지: %s", category)
+		return category
+	}
+
+	// 시간 기반 카테고리 결정
+	var newCategory string
+	var timeRange string
+
+	if hour >= 10 && hour < 15 {
+		// 10시 이후 ~ 15시 미만: 중식
+		newCategory = "6120"
+		timeRange = "10:00-14:59"
+	} else if hour >= 16 || hour < 4 {
+		// 16시 ~ 03시: 석식 (다음날 새벽 포함)
+		newCategory = "6130"
+		if hour >= 16 {
+			timeRange = "16:00-23:59"
+		} else {
+			timeRange = "00:00-03:59"
+		}
+	} else if hour >= 4 && hour < 10 {
+		// 04시 ~ 10시 미만: 조식
+		newCategory = "6110"
+		timeRange = "04:00-09:59"
+	} else {
+		// 15시대 (15:00-15:59)는 애매한 시간대로 원래 카테고리 유지
+		log.Printf("애매한 시간대(%d시)로 카테고리 유지: %s", hour, category)
+		return category
+	}
+
+	// 카테고리가 변경된 경우 로그 출력
+	if newCategory != category {
+		originalLabel := s.getCategoryLabel(category)
+		newLabel := s.getCategoryLabel(newCategory)
+		log.Printf("⏰ 시간 기반 카테고리 변경: %s(%s) → %s(%s) [시간: %d시, 범위: %s]",
+			originalLabel, category, newLabel, newCategory, hour, timeRange)
+		return newCategory
+	}
+
+	log.Printf("시간 기반 카테고리 확인: %d시 → %s (%s) 유지",
+		hour, s.getCategoryLabel(category), category)
+	return category
+}
+
+// 카테고리 코드를 라벨로 변환
+func (s *OCRService) getCategoryLabel(category string) string {
+	categoryLabels := map[string]string{
+		"6110": "조식",
+		"6120": "중식",
+		"6130": "석식",
+		"6310": "교통정산",
+		"6320": "국내출장",
+	}
+	if label, exists := categoryLabels[category]; exists {
+		return label
+	}
+	return category
+}
+
+// 날짜/시간 문자열에서 시간(hour) 추출 (공통 함수 활용)
+func (s *OCRService) extractHourFromDateTime(dateTimeText string) int {
+	hour := extractHourFromDateTime(dateTimeText)
+	if hour != -1 {
+		log.Printf("시간 추출 성공: '%s' → %d시", dateTimeText, hour)
+	} else {
+		log.Printf("시간 추출 실패: '%s'에서 유효한 시간을 찾을 수 없음", dateTimeText)
+	}
+	return hour
 }
 
 // 단일 이미지 OCR 처리
@@ -219,16 +310,6 @@ func (s *OCRService) processSingleImage(imageFile ImageFile, index int) (*OCRIma
 		log.Printf("=== 이미지 %d 전체 OCR 응답 JSON ===", index+1)
 		log.Printf("%s", string(responseBody))
 	} else {
-		/*
-			// JSON 포맷팅해서 보기 좋게 출력
-			var tempResponse interface{}
-			if err := json.Unmarshal(responseBody, &tempResponse); err == nil {
-				formattedJson, _ := json.MarshalIndent(tempResponse, "", "  ")
-				log.Printf("=== 이미지 %d OCR 응답 JSON ===\n%s", index+1, string(formattedJson))
-			} else {
-				log.Printf("=== 이미지 %d OCR 응답 Raw Data ===\n%s", index+1, string(responseBody))
-			}
-		*/
 		// 포매팅 없이 원본 그대로 출력
 		log.Printf("=== 이미지 %d OCR 응답 JSON (원본) ===\n%s", index+1, string(responseBody))
 	}
