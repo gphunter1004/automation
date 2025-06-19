@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR to Excel 변환</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📄 OCR to Excel 변환기</h1>
+        <p class="description">
+            이미지를 업로드하면 OCR 처리 후 Excel 파일로 다운로드됩니다.
+        </p>
+        
+        <!-- 파일 정리 규칙 안내 -->
+        <div class="file-naming-guide">
+            <h3>📋 파일 정리 규칙</h3>
+            <div class="guide-content">
+                <div class="guide-section">
+                    <h4>🏢 국내출장</h4>
+                    <div class="example">
+                        <strong>예시:</strong> <code>20250614_국내출장(본인외인원1,본인외인원2)_숙박비.pdf</code>
+                    </div>
+                    <div class="description-text">
+                        날짜_국내출장(추가인원)_용도 형식으로 저장하시면 자동으로 정보가 입력됩니다.
+                    </div>
+                </div>
+                
+                <div class="guide-section">
+                    <h4>🍽️ 식사</h4>
+                    <div class="example">
+                        <strong>본인만:</strong> <code>20250614_석식.png</code><br>
+                        <strong>다수인원:</strong> <code>20250614_석식(본인외인원1,본인외인원2).png</code>
+                    </div>
+                    <div class="description-text">
+                        날짜_식사종류(추가인원) 형식으로 저장하시면 자동으로 카테고리와 인원이 설정됩니다.
+                    </div>
+                </div>
+                
+                <div class="guide-tips">
+                    <strong>💡 팁:</strong> 파일명에 괄호 안에 추가 인원을 적으면 자동으로 인식됩니다!
+                </div>
+            </div>
+        </div>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="user_name">이름 *</label>
+                <input type="text" id="user_name" name="user_name" 
+                       placeholder="이름을 입력하세요" required>
+                <div class="file-info">
+                    RMK_DC 기본값 생성에 사용됩니다
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="attr_cd">매출전표 유형 (ATTR_CD)</label>
+                <select id="attr_cd" name="attr_cd">
+                    <option value="8A" selected>신용카드매출전표(개인)</option>
+                    <option value="8">신용카드매출전표(법인)</option>
+                </select>
+                <div class="file-info">
+                    신용카드매출전표 유형을 선택하세요 (기본값: 개인)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="depositor_dc">예금주명 (DEPOSITOR_DC)</label>
+                <input type="text" id="depositor_dc" name="depositor_dc" 
+                       placeholder="예금주명을 입력하세요 (선택사항)">
+                <div class="file-info">
+                    환경변수 DEFAULT_DEPOSITOR_DC로 기본값 설정 가능 (선택사항)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="dept_cd">부서코드 (DEPT_CD)</label>
+                <input type="text" id="dept_cd" name="dept_cd" 
+                       placeholder="부서코드를 입력하세요 (선택사항)">
+                <div class="file-info">
+                    환경변수 DEFAULT_DEPT_CD로 기본값 설정 가능 (선택사항)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="emp_cd">사원코드 (EMP_CD)</label>
+                <input type="text" id="emp_cd" name="emp_cd" 
+                       placeholder="사원코드를 입력하세요 (선택사항)">
+                <div class="file-info">
+                    환경변수 DEFAULT_EMP_CD로 기본값 설정 가능 (선택사항)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="bank_cd">은행코드 (BANK_CD)</label>
+                <input type="text" id="bank_cd" name="bank_cd" 
+                       placeholder="은행코드를 입력하세요 (선택사항)">
+                <div class="file-info">
+                    환경변수 DEFAULT_BANK_CD로 기본값 설정 가능 (선택사항)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="ba_nb">계좌번호 (BA_NB)</label>
+                <input type="text" id="ba_nb" name="ba_nb" 
+                       placeholder="계좌번호를 입력하세요 (선택사항)">
+                <div class="file-info">
+                    환경변수 DEFAULT_BA_NB로 기본값 설정 가능 (선택사항)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="images">이미지 파일 (여러 개 선택 가능) *</label>
+                <input type="file" id="images" name="images" multiple 
+                       accept=".jpg,.jpeg,.png,.pdf,.tif,.tiff" required>
+                <div class="file-info">
+                    지원 형식: JPG, JPEG, PNG, PDF, TIF, TIFF (각 파일 최대 50MB, 최대 10개 파일)
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </div>
+            
+            <button type="button" id="submitBtn">
+                📤 OCR 처리하기
+            </button>
+        </form>
+        
+        <!-- OCR 결과 테이블 섹션 -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h2>📋 OCR 처리 결과</h2>
+                <p class="results-description">
+                    아래 데이터를 확인하고 필요시 수정한 후 Excel 파일로 다운로드하세요.
+                </p>
+            </div>
+            
+            <div class="table-container">
+                <table id="resultsTable" class="results-table">
+                    <thead>
+                        <tr>
+                            <th>파일명</th>
+                            <th>카테고리</th>
+                            <th>비고 (RMK_DC)</th>
+                            <th>사용처 (TR_NM)</th>
+                            <th>사용액 (SUP_AM)</th>
+                            <th>사용일 (ISS_DT)</th>
+                            <th>결제일 (PAY_DT)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- OCR 결과 데이터가 여기에 추가됩니다 -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="download-section">
+                <button type="button" id="downloadBtn" class="download-button">
+                    📄 Excel 파일 다운로드
+                </button>
+                <button type="button" id="resetBtn" class="reset-button">
+                    🔄 다시 시작
+                </button>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingText">이미지를 처리 중입니다... 잠시만 기다려주세요.</p>
+        </div>
+        
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+    </div>
+
+    <!-- JavaScript 파일들을 의존성 순서대로 로드 -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="storage-manager.js"></script>
+    <script src="file-manager.js"></script>
+    <script src="ocr-processor.js"></script>
+    <script src="results-manager.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
