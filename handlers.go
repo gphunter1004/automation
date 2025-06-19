@@ -212,7 +212,9 @@ func convertOCRResults(ocrResults []*SingleImageOCRResultWithCategory, userName 
 
 		// 필드에서 값 추출
 		purpose := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용처")
-		amount := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용액")
+
+		// 사용액 계산 (사용액이 없으면 공급가 + 부가세로 계산)
+		amount := ocrServiceInstance.CalculateAmount(image.Fields)
 		amount = excelService.cleanAmountText(amount)
 
 		issueDate := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용일")

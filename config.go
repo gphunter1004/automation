@@ -141,6 +141,7 @@ func getImageFormat(filename string) string {
 }
 
 // 통합된 날짜 변환 함수
+// 통합된 날짜 변환 함수
 func convertDateToYYYYMMDD(dateText string) string {
 	if dateText == "" {
 		return dateText
@@ -154,7 +155,9 @@ func convertDateToYYYYMMDD(dateText string) string {
 		{regexp.MustCompile(`(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*\d{1,2}:\s*\d{1,2}`), "YYYY. M. D. HH:MM"},
 		{regexp.MustCompile(`(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})`), "YYYY. M. D"},
 		{regexp.MustCompile(`(\d{4})\.(\d{2})\.(\d{2})`), "YYYY.MM.DD"},
-		{regexp.MustCompile(`(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\d{2}`), "YY.MM.DD HH:MM"},
+		{regexp.MustCompile(`(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\s*\d{2}:\s*\d{2}`), "YY.MM.DD HH:MM:SS"},
+		{regexp.MustCompile(`(\d{2})\.(\d{2})\.(\d{2})\s+[I|]\s+\d{2}:\s*\d{2}:\s*\d{2}`), "YY.MM.DD I HH:MM:SS"},
+		{regexp.MustCompile(`(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\s*\d{2}`), "YY.MM.DD HH:MM"},
 		{regexp.MustCompile(`(\d{2})\.(\d{2})\.(\d{2})\d{2}:\d{2}`), "YY.MM.DDHH:MM"},
 		{regexp.MustCompile(`^(\d{2})\.(\d{2})\.(\d{2})$`), "YY.MM.DD"},
 	}

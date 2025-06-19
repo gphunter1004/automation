@@ -128,7 +128,10 @@ func (e *ExcelService) ConvertAsyncOCRToExcelDataWithCategory(ocrResults []*Sing
 
 		// 필드에서 값 추출
 		trNM := ocrService.ExtractFieldValue(image.Fields, "사용처")
-		supAM := ocrService.ExtractFieldValue(image.Fields, "사용액")
+
+		// 사용액 계산 (사용액이 없으면 공급가 + 부가세로 계산)
+		supAM := ocrService.CalculateAmount(image.Fields)
+
 		issDT := ocrService.ExtractFieldValue(image.Fields, "사용일")
 
 		// 비고 생성

@@ -3,6 +3,7 @@
 // 날짜 관련 유틸리티
 const DateUtils = {
     // 날짜를 YYYYMMDD 형식으로 변환 (서버와 동일한 로직)
+        // 날짜를 YYYYMMDD 형식으로 변환 (서버와 동일한 로직)
     convertToYYYYMMDD(dateText) {
         if (!dateText) return '';
         
@@ -11,6 +12,8 @@ const DateUtils = {
             { regex: DATE_PATTERNS.YYYY_M_D_TIME_SHORT, desc: "YYYY. M. D. HH:MM" },
             { regex: DATE_PATTERNS.YYYY_M_D, desc: "YYYY. M. D" },
             { regex: DATE_PATTERNS.YYYY_MM_DD, desc: "YYYY.MM.DD" },
+            { regex: DATE_PATTERNS.YY_MM_DD_TIME_FULL, desc: "YY.MM.DD HH:MM:SS" },
+            { regex: DATE_PATTERNS.YY_MM_DD_TIME_WITH_I, desc: "YY.MM.DD I HH:MM:SS" },
             { regex: DATE_PATTERNS.YY_MM_DD_TIME, desc: "YY.MM.DD HH:MM" },
             { regex: DATE_PATTERNS.YY_MM_DD_NO_SPACE, desc: "YY.MM.DDHH:MM" },
             { regex: DATE_PATTERNS.YY_MM_DD, desc: "YY.MM.DD" }

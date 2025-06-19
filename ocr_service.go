@@ -8,6 +8,9 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -216,14 +219,18 @@ func (s *OCRService) processSingleImage(imageFile ImageFile, index int) (*OCRIma
 		log.Printf("=== 이미지 %d 전체 OCR 응답 JSON ===", index+1)
 		log.Printf("%s", string(responseBody))
 	} else {
-		// JSON 포맷팅해서 보기 좋게 출력
-		var tempResponse interface{}
-		if err := json.Unmarshal(responseBody, &tempResponse); err == nil {
-			formattedJson, _ := json.MarshalIndent(tempResponse, "", "  ")
-			log.Printf("=== 이미지 %d OCR 응답 JSON ===\n%s", index+1, string(formattedJson))
-		} else {
-			log.Printf("=== 이미지 %d OCR 응답 Raw Data ===\n%s", index+1, string(responseBody))
-		}
+		/*
+			// JSON 포맷팅해서 보기 좋게 출력
+			var tempResponse interface{}
+			if err := json.Unmarshal(responseBody, &tempResponse); err == nil {
+				formattedJson, _ := json.MarshalIndent(tempResponse, "", "  ")
+				log.Printf("=== 이미지 %d OCR 응답 JSON ===\n%s", index+1, string(formattedJson))
+			} else {
+				log.Printf("=== 이미지 %d OCR 응답 Raw Data ===\n%s", index+1, string(responseBody))
+			}
+		*/
+		// 포매팅 없이 원본 그대로 출력
+		log.Printf("=== 이미지 %d OCR 응답 JSON (원본) ===\n%s", index+1, string(responseBody))
 	}
 
 	// 응답 JSON 파싱
@@ -263,5 +270,58 @@ func (s *OCRService) ExtractFieldValue(fields []Field, fieldName string) string 
 			return field.InferText
 		}
 	}
+	return ""
+}
+
+// 금액 텍스트를 숫자로 변환 (콤마 제거)
+func (s *OCRService) parseAmount(amountText string) float64 {
+	if amountText == "" {
+		return 0
+	}
+
+	// 숫자와 콤마만 추출
+	re := regexp.MustCompile(`[0-9,]+`)
+	matches := re.FindString(amountText)
+	if matches == "" {
+		return 0
+	}
+
+	// 콤마 제거 후 숫자로 변환
+	cleanAmount := strings.ReplaceAll(matches, ",", "")
+	amount, err := strconv.ParseFloat(cleanAmount, 64)
+	if err != nil {
+		log.Printf("금액 파싱 실패: %s -> %v", amountText, err)
+		return 0
+	}
+
+	return amount
+}
+
+// 사용액 계산 (사용액이 없으면 공급가 + 부가세로 계산)
+func (s *OCRService) CalculateAmount(fields []Field) string {
+	// 사용액 먼저 확인
+	supAM := s.ExtractFieldValue(fields, "사용액")
+	if supAM != "" && s.parseAmount(supAM) > 0 {
+		log.Printf("사용액 필드 존재: %s", supAM)
+		return supAM
+	}
+
+	// 사용액이 없거나 0이면 공급가 + 부가세로 계산
+	gongAM := s.ExtractFieldValue(fields, "공급가")
+	vatAM := s.ExtractFieldValue(fields, "부가세")
+
+	log.Printf("사용액이 없거나 0원 -> 공급가: '%s', 부가세: '%s'", gongAM, vatAM)
+
+	gongAmount := s.parseAmount(gongAM)
+	vatAmount := s.parseAmount(vatAM)
+
+	if gongAmount > 0 || vatAmount > 0 {
+		totalAmount := gongAmount + vatAmount
+		result := fmt.Sprintf("%.0f", totalAmount)
+		log.Printf("계산된 사용액: 공급가(%.0f) + 부가세(%.0f) = %s", gongAmount, vatAmount, result)
+		return result
+	}
+
+	log.Printf("공급가와 부가세 모두 없음 -> 사용액을 빈 값으로 반환")
 	return ""
 }

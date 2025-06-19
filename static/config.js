@@ -51,7 +51,9 @@ const DATE_PATTERNS = {
     YYYY_M_D_TIME_SHORT: /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*\d{1,2}:\s*\d{1,2}/,
     YYYY_M_D: /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/,
     YYYY_MM_DD: /(\d{4})\.(\d{2})\.(\d{2})/,
-    YY_MM_DD_TIME: /(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\d{2}/,
+    YY_MM_DD_TIME_FULL: /(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\s*\d{2}:\s*\d{2}/,
+    YY_MM_DD_TIME_WITH_I: /(\d{2})\.(\d{2})\.(\d{2})\s+[I|]\s+\d{2}:\s*\d{2}:\s*\d{2}/,
+    YY_MM_DD_TIME: /(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\s*\d{2}/,
     YY_MM_DD_NO_SPACE: /(\d{2})\.(\d{2})\.(\d{2})\d{2}:\d{2}/,
     YY_MM_DD: /^(\d{2})\.(\d{2})\.(\d{2})$/,
     YYYYMMDD: /(\d{8})/
