@@ -27,11 +27,14 @@ const FileManager = {
         const maxFiles = this._getMaxFilesForType(type);
         
         // 파일 개수 제한 체크
-        if (currentFiles.length + files.length > maxFiles) {
-            const message = type === 'basic' 
-                ? `최대 ${maxFiles}개의 파일만 선택할 수 있습니다.`
-                : `총 파일 개수가 너무 많습니다. 한 번에 최대 ${maxFiles}개까지 처리 가능합니다.`;
-            UIUtils.showError(message);
+        if (type === 'basic' && currentFiles.length + files.length > maxFiles) {
+            UIUtils.showError(`최대 ${maxFiles}개의 파일만 선택할 수 있습니다.`);
+            return;
+        }
+        
+        // 추가 OCR의 경우 한 번에 최대 5개까지만 제한
+        if (type === 'additional' && files.length > CONFIG.MAX_FILES) {
+            UIUtils.showError(`추가 OCR은 한 번에 최대 ${CONFIG.MAX_FILES}개의 파일만 처리할 수 있습니다.`);
             return;
         }
 
@@ -67,10 +70,10 @@ const FileManager = {
     // 타입별 최대 파일 개수 반환
     _getMaxFilesForType(type) {
         if (type === 'additional') {
-            const currentResults = ocrResults ? ocrResults.length : 0;
-            const currentAdditional = window.additionalSelectedFiles ? window.additionalSelectedFiles.length : 0;
-            return CONFIG.MAX_FILES * 2 - currentResults - currentAdditional;
+            // 추가 OCR은 한 번에 최대 5개까지만 (전체 결과 목록에는 제한 없음)
+            return CONFIG.MAX_FILES;
         }
+        // 기본 OCR은 최대 5개
         return CONFIG.MAX_FILES;
     },
 
