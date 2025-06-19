@@ -96,7 +96,7 @@ const FileManager = {
     // 파일 아이템 DOM 생성
     _createFileItem(fileData, index) {
         const fileItem = document.createElement('div');
-        fileItem.className = CONFIG.CSS_CLASSES.FILE_ITEM;
+        fileItem.className = 'file-item';
         
         // 파일 정보 섹션
         const fileInfoSection = this._createFileInfoSection(fileData);
@@ -417,66 +417,115 @@ const FileManager = {
         this.updateFileList();
     },
     
-    // 드래그 앤 드롭 설정
+    // 드래그 앤 드롭 설정 (수정된 버전)
     setupDragAndDrop() {
-        const container = document.querySelector('.container');
-        if (!container) return;
+        console.log('드래그앤드롭 설정 시작');
         
-        // 기본 동작 방지
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            container.addEventListener(eventName, this._preventDefaults, false);
+        // 전체 페이지와 컨테이너에 이벤트 설정
+        const targets = [document.body, document.querySelector('.container')];
+        
+        targets.forEach(target => {
+            if (!target) return;
+            
+            // 기본 동작 방지 (매우 중요!)
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                target.addEventListener(eventName, this._preventDefaults, false);
+                
+                // 전역에서도 기본 동작 방지
+                document.addEventListener(eventName, this._preventDefaults, false);
+            });
+            
+            // 하이라이트 효과
+            ['dragenter', 'dragover'].forEach(eventName => {
+                target.addEventListener(eventName, () => this._highlight(), false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                target.addEventListener(eventName, () => this._unhighlight(), false);
+            });
+            
+            // 드롭 이벤트
+            target.addEventListener('drop', (e) => this._handleDrop(e), false);
         });
         
-        // 하이라이트 효과
-        ['dragenter', 'dragover'].forEach(eventName => {
-            container.addEventListener(eventName, this._highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            container.addEventListener(eventName, this._unhighlight, false);
-        });
-        
-        container.addEventListener('drop', (e) => this._handleDrop(e), false);
+        console.log('드래그앤드롭 설정 완료');
     },
     
-    // 드래그 이벤트 유틸리티
+    // 드래그 이벤트 유틸리티 (수정된 버전)
     _preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
+        return false;
     },
     
-    _highlight(e) {
+    _highlight() {
         const container = document.querySelector('.container');
         if (container) {
-            container.classList.add(CONFIG.CSS_CLASSES.DRAG_OVER);
+            container.classList.add('drag-over');
+            console.log('드래그 하이라이트 활성화');
         }
     },
     
-    _unhighlight(e) {
+    _unhighlight() {
         const container = document.querySelector('.container');
         if (container) {
-            container.classList.remove(CONFIG.CSS_CLASSES.DRAG_OVER);
+            container.classList.remove('drag-over');
+            console.log('드래그 하이라이트 비활성화');
         }
     },
     
-    // 드롭 처리
+    // 드롭 처리 (수정된 버전)
     _handleDrop(e) {
+        console.log('드롭 이벤트 발생:', e);
+        
+        this._preventDefaults(e);
+        
         const dt = e.dataTransfer;
         const files = Array.from(dt.files);
         
-        // 이미지 파일만 필터링
-        const validFiles = files.filter(file => UTILS.isSupportedFileType(file));
+        console.log('드롭된 파일 수:', files.length);
         
+        if (files.length === 0) {
+            console.log('드롭된 파일이 없습니다');
+            return;
+        }
+        
+        // 이미지 파일만 필터링
+        const validFiles = files.filter(file => {
+            const isValid = UTILS.isSupportedFileType(file);
+            console.log(`파일 ${file.name}: ${isValid ? '유효' : '무효'} (타입: ${file.type})`);
+            return isValid;
+        });
+        
+        console.log('유효한 파일 수:', validFiles.length);
+        
+        if (validFiles.length === 0) {
+            UIUtils.showError('지원하지 않는 파일 형식입니다. JPG, PNG, PDF, TIF 파일만 업로드 가능합니다.');
+            return;
+        }
+        
+        // 파일 개수 제한 체크
         if (selectedFiles.length + validFiles.length > CONFIG.MAX_FILES) {
             UIUtils.showError(`최대 ${CONFIG.MAX_FILES}개의 파일만 선택할 수 있습니다.`);
             return;
         }
         
+        // 파일 추가
+        let addedCount = 0;
         validFiles.forEach(file => {
             this._addFileToSelection(file);
+            addedCount++;
         });
         
+        console.log(`${addedCount}개 파일이 추가됨`);
+        
+        // UI 업데이트
         this.updateFileList();
+        
+        // 성공 메시지
+        if (addedCount > 0) {
+            UIUtils.showSuccess(`✅ ${addedCount}개 파일이 추가되었습니다.`);
+        }
     },
     
     // 초기화
@@ -488,6 +537,8 @@ const FileManager = {
         if (imagesInput) {
             imagesInput.value = '';
         }
+        
+        console.log('파일 매니저 리셋 완료');
     }
 };
 

@@ -17,6 +17,8 @@ body {
     width: 100%;
     max-width: none;
     box-sizing: border-box;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
 h1 {
@@ -152,7 +154,18 @@ input[type="text"], input[type="file"], select {
 }
 
 input[type="file"] {
-    padding: 8px;
+    padding: 20px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    text-align: center;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+    border-color: #2196f3;
+    background: #f0f8ff;
 }
 
 select {
@@ -190,7 +203,9 @@ button:disabled {
 .file-info {
     font-size: 14px;
     color: #666;
-    margin-top: 5px;
+    margin-top: 8px;
+    text-align: center;
+    line-height: 1.4;
 }
 
 .file-list {
@@ -349,6 +364,57 @@ button:disabled {
 .summary-count {
     font-weight: 500;
     color: #333;
+}
+
+/* 드래그 앤 드롭 강화된 스타일 */
+.container.drag-over {
+    background-color: #e3f2fd !important;
+    border: 3px dashed #2196f3 !important;
+    box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3) !important;
+    transform: scale(1.02);
+}
+
+.container.drag-over::before {
+    content: "📁 파일을 여기에 드래그하세요";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    padding: 20px 40px;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* 드래그 중일 때 다른 요소들 투명하게 */
+.container.drag-over > *:not(::before) {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* 전체 드래그 활성화 상태 */
+body.drag-active {
+    background-color: #f0f8ff;
+}
+
+/* 드래그 상태 표시 */
+.drag-drop-status {
+    margin-top: 5px;
+    padding: 5px 10px;
+    background: #f8f9fa;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #666;
+}
+
+.drag-drop-status.active {
+    background: #e3f2fd;
+    color: #1976d2;
 }
 
 /* 로딩 스타일 */
@@ -523,103 +589,6 @@ button:disabled {
     transform: translateY(-1px);
 }
 
-/* 드래그 앤 드롭 스타일 */
-.container.drag-over {
-    background-color: #e3f2fd;
-    border: 2px dashed #007bff;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-    
-    .container {
-        padding: 20px;
-    }
-    
-    h1 {
-        font-size: 24px;
-    }
-    
-    input[type="text"], input[type="file"], button, select {
-        font-size: 14px;
-    }
-    
-    .cookie-load-message {
-        padding: 10px;
-        margin: 15px 0;
-    }
-    
-    .message-content {
-        gap: 8px;
-    }
-    
-    .message-text {
-        font-size: 13px;
-    }
-    
-    .file-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-        padding: 10px 0;
-    }
-    
-    .category-section, 
-    .additional-names-section, 
-    .business-content-section, 
-    .purpose-section {
-        flex: none;
-        width: 100%;
-        min-width: auto;
-    }
-    
-    .summary-item {
-        flex-direction: column;
-        gap: 2px;
-    }
-    
-    .summary-label {
-        font-size: 12px;
-    }
-    
-    .results-section {
-        padding: 15px;
-    }
-    
-    .results-table {
-        font-size: 12px;
-        min-width: 800px;
-    }
-    
-    .results-table th,
-    .results-table td {
-        padding: 8px 4px;
-        min-width: 80px;
-    }
-    
-    .download-section {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .download-button, .reset-button {
-        width: 100%;
-        padding: 15px;
-    }
-    
-    .dev-section {
-        padding: 10px;
-    }
-    
-    .dev-section button {
-        width: 100%;
-        margin-bottom: 5px;
-    }
-}
-
 /* 파일 정리 규칙 가이드 스타일 */
 .file-naming-guide {
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
@@ -705,6 +674,98 @@ button:disabled {
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        padding: 20px;
+    }
+    
+    h1 {
+        font-size: 24px;
+    }
+    
+    input[type="text"], input[type="file"], button, select {
+        font-size: 14px;
+    }
+    
+    input[type="file"] {
+        padding: 15px;
+    }
+    
+    .cookie-load-message {
+        padding: 10px;
+        margin: 15px 0;
+    }
+    
+    .message-content {
+        gap: 8px;
+    }
+    
+    .message-text {
+        font-size: 13px;
+    }
+    
+    .file-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 0;
+    }
+    
+    .category-section, 
+    .additional-names-section, 
+    .business-content-section, 
+    .purpose-section {
+        flex: none;
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .summary-item {
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .summary-label {
+        font-size: 12px;
+    }
+    
+    .results-section {
+        padding: 15px;
+    }
+    
+    .results-table {
+        font-size: 12px;
+        min-width: 800px;
+    }
+    
+    .results-table th,
+    .results-table td {
+        padding: 8px 4px;
+        min-width: 80px;
+    }
+    
+    .download-section {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .download-button, .reset-button {
+        width: 100%;
+        padding: 15px;
+    }
+    
+    .dev-section {
+        padding: 10px;
+    }
+    
+    .dev-section button {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
     .file-naming-guide {
         padding: 15px;
         margin: 15px 0 20px 0;
@@ -739,5 +800,15 @@ button:disabled {
     .guide-tips {
         padding: 10px;
         font-size: 13px;
+    }
+    
+    /* 반응형 드래그앤드롭 */
+    .container.drag-over::before {
+        font-size: 16px;
+        padding: 15px 25px;
+    }
+    
+    .container.drag-over {
+        transform: scale(1.01);
     }
 }
