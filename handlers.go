@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime/multipart"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/xuri/excelize/v2"
 )
 
-// OCR 처리 핸들러 (결과만 반환)
+// OCR 처리 핸들러
 func handleOCRProcess(c *fiber.Ctx) error {
 	// 폼 데이터 파싱
 	var req UploadRequest
@@ -37,91 +40,20 @@ func handleOCRProcess(c *fiber.Ctx) error {
 	}
 
 	// 파일 개수 제한 체크
-	maxFiles := getMaxFiles()
-	if len(files) > maxFiles {
+	if len(files) > getMaxFiles() {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Sprintf("한 번에 최대 %d개의 파일만 업로드할 수 있습니다", maxFiles),
+			"error": fmt.Sprintf("한 번에 최대 %d개의 파일만 업로드할 수 있습니다", getMaxFiles()),
 		})
 	}
 
-	// 카테고리, 비고, 추가 이름, 국내출장 관련 정보 추출
-	categories := make(map[int]string)
-	remarks := make(map[int]string)
-	additionalNames := make(map[int]string)
-	businessContents := make(map[int]string)
-	purposes := make(map[int]string)
+	// 메타데이터 추출 (통합 함수)
+	metadata := extractFormMetadata(form, len(files))
 
-	for i := 0; i < len(files); i++ {
-		categoryKey := fmt.Sprintf("category_%d", i)
-		if categoryValues, exists := form.Value[categoryKey]; exists && len(categoryValues) > 0 {
-			categories[i] = categoryValues[0]
-		} else {
-			categories[i] = "6130" // 기본값: 석식
-		}
-
-		remarksKey := fmt.Sprintf("remarks_%d", i)
-		if remarksValues, exists := form.Value[remarksKey]; exists && len(remarksValues) > 0 {
-			remarks[i] = remarksValues[0]
-		} else {
-			remarks[i] = "" // 기본값: 빈 문자열
-		}
-
-		additionalNamesKey := fmt.Sprintf("additional_names_%d", i)
-		if additionalNamesValues, exists := form.Value[additionalNamesKey]; exists && len(additionalNamesValues) > 0 {
-			additionalNames[i] = additionalNamesValues[0]
-		} else {
-			additionalNames[i] = "" // 기본값: 빈 문자열
-		}
-
-		// 국내출장 전용 필드들
-		businessContentKey := fmt.Sprintf("business_content_%d", i)
-		if businessContentValues, exists := form.Value[businessContentKey]; exists && len(businessContentValues) > 0 {
-			businessContents[i] = businessContentValues[0]
-		} else {
-			businessContents[i] = "" // 기본값: 빈 문자열
-		}
-
-		purposeKey := fmt.Sprintf("purpose_%d", i)
-		if purposeValues, exists := form.Value[purposeKey]; exists && len(purposeValues) > 0 {
-			purposes[i] = purposeValues[0]
-		} else {
-			purposes[i] = "" // 기본값: 빈 문자열
-		}
-	}
-
-	// 모든 파일 읽기 및 준비
-	var imageFiles []ImageFileWithCategory
-	for i, file := range files {
-		// 파일 형식 검증
-		if !isSupportedImageFormat(file.Filename) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": fmt.Sprintf("파일 '%s'는 지원하지 않는 형식입니다. (jpg, jpeg, png, pdf, tif, tiff만 지원)", file.Filename),
-			})
-		}
-
-		// 파일 읽기
-		fileReader, err := file.Open()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": fmt.Sprintf("파일 '%s' 읽기 실패: %v", file.Filename, err),
-			})
-		}
-
-		fileData, err := io.ReadAll(fileReader)
-		fileReader.Close()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": fmt.Sprintf("파일 '%s' 데이터 읽기 실패: %v", file.Filename, err),
-			})
-		}
-
-		imageFiles = append(imageFiles, ImageFileWithCategory{
-			ImageFile: ImageFile{
-				Data:     fileData,
-				Filename: file.Filename,
-			},
-			Category: categories[i],
-			Remarks:  remarks[i],
+	// 파일 처리 및 OCR 호출
+	imageFiles, err := prepareImageFiles(files, metadata)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": err.Error(),
 		})
 	}
 
@@ -134,125 +66,22 @@ func handleOCRProcess(c *fiber.Ctx) error {
 		})
 	}
 
-	// OCR 결과를 프론트엔드용 데이터로 변환
-	excelService := NewExcelService()
-	results := make([]OCRResult, 0)
-
-	for _, result := range ocrResults {
-		if result.Error != nil {
-			log.Printf("❌ 이미지 %s: %v (건너뜀)", result.ImageName, result.Error)
-			continue
-		}
-
-		if result.Response == nil || result.Response.InferResult != "SUCCESS" {
-			log.Printf("❌ 이미지 %s: OCR 처리 실패 (건너뜀)", result.ImageName)
-			continue
-		}
-
-		image := result.Response
-		ocrServiceInstance := NewOCRService()
-
-		// 필드에서 값 추출
-		purpose := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용처")
-		amount := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용액")
-		amount = excelService.cleanAmountText(amount)
-
-		issueDate := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용일")
-		issueDate = excelService.convertDateFormat(issueDate)
-
-		payDate := excelService.calculatePaymentDate()
-
-		// 비고 생성 로직
-		var remark string
-
-		if result.Category == "6320" { // 국내출장
-			// 국내출장: 출장내용_이름,추가이름_용도 형식
-			businessContent := businessContents[result.ImageIndex]
-			purposeText := purposes[result.ImageIndex]
-
-			finalUserName := req.UserName
-			if additionalNames[result.ImageIndex] != "" {
-				finalUserName = fmt.Sprintf("%s,%s", req.UserName, additionalNames[result.ImageIndex])
-			}
-
-			remark = fmt.Sprintf("%s_%s_%s", businessContent, finalUserName, purposeText)
-			log.Printf("✅ 국내출장 이미지 %s: 자동 생성된 비고 = %s",
-				result.ImageName, remark)
-		} else {
-			// 일반 카테고리 처리
-			// 사용자가 직접 입력한 비고가 있고, 임시 비고가 아닌 경우만 사용
-			if result.Remarks != "" &&
-				!strings.Contains(result.Remarks, "임시_") &&
-				!strings.Contains(result.Remarks, "MM/DD") {
-				remark = result.Remarks
-			} else {
-				// 이름 조합 생성 (사용자이름,추가이름)
-				finalUserName := req.UserName
-				if additionalNames[result.ImageIndex] != "" {
-					finalUserName = fmt.Sprintf("%s,%s", req.UserName, additionalNames[result.ImageIndex])
-				}
-				// 실제 OCR에서 추출된 사용일로 비고 생성
-				remark = excelService.generateDefaultRemark(issueDate, finalUserName, result.Category)
-				log.Printf("✅ 일반 이미지 %s: 자동 생성된 비고 = %s (사용일: %s)",
-					result.ImageName, remark, issueDate)
-			}
-		}
-
-		ocrResult := OCRResult{
-			FileName:  result.ImageName,
-			Category:  result.Category,
-			Remark:    remark,
-			Purpose:   purpose,
-			Amount:    amount,
-			IssueDate: issueDate,
-			PayDate:   payDate,
-		}
-
-		results = append(results, ocrResult)
-	}
-
+	// 결과 변환
+	results := convertOCRResults(ocrResults, req.UserName, metadata)
 	if len(results) == 0 {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "모든 이미지의 OCR 처리에 실패했습니다",
 		})
 	}
 
-	// ISS_DT (사용일) 기준으로 오름차순 정렬 (엑셀과 동일하게)
-	log.Printf("=== OCR 결과 ISS_DT 기준 정렬 시작 ===")
-	log.Printf("정렬 전 순서:")
-	for i, result := range results {
-		log.Printf("  %d. %s (ISS_DT: %s)", i+1, result.FileName, result.IssueDate)
-	}
+	// 날짜순 정렬
+	sortResultsByIssueDate(results)
 
-	sortOCRResultsByIssueDate(results)
-
-	log.Printf("정렬 후 순서:")
-	for i, result := range results {
-		log.Printf("  %d. %s (ISS_DT: %s)", i+1, result.FileName, result.IssueDate)
-	}
-	log.Printf("=== OCR 결과 정렬 완료 ===")
-
-	// JSON 결과 반환 (Excel 파일 생성하지 않음!)
 	return c.JSON(OCRProcessResponse{
 		Success: true,
 		Message: fmt.Sprintf("%d개 파일의 OCR 처리가 완료되었습니다", len(results)),
 		Data:    results,
 	})
-}
-
-// OCR 결과를 IssueDate 기준으로 오름차순 정렬
-func sortOCRResultsByIssueDate(results []OCRResult) {
-	// 버블 정렬을 사용한 간단한 정렬 구현
-	n := len(results)
-	for i := 0; i < n-1; i++ {
-		for j := 0; j < n-i-1; j++ {
-			// IssueDate 문자열 비교 (YYYYMMDD 형식이므로 문자열 비교로 충분)
-			if results[j].IssueDate > results[j+1].IssueDate {
-				// 스왑
-				results[j], results[j+1] = results[j+1], results[j]
-			}
-		}
-	}
 }
 
 // Excel 다운로드 핸들러
@@ -279,7 +108,172 @@ func handleExcelDownload(c *fiber.Ctx) error {
 		})
 	}
 
-	// 환경변수에서 기본값 설정
+	// 환경변수 기본값 설정
+	setDefaultValues(&req.UploadRequest)
+
+	// OCR 결과를 Excel 데이터로 변환
+	allExcelData := convertResultsToExcelData(ocrResults, &req.UploadRequest)
+
+	// Excel 파일 생성
+	excelService := NewExcelService()
+	excelFile, err := excelService.CreateExcelFileWithMultipleData(allExcelData)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Excel 파일 생성 실패: " + err.Error(),
+		})
+	}
+	defer excelFile.Close()
+
+	// 파일 다운로드 응답
+	return sendExcelFile(c, excelFile, len(allExcelData))
+}
+
+// 헬퍼 함수들
+
+// 폼 메타데이터 추출
+func extractFormMetadata(form *multipart.Form, fileCount int) map[int]map[string]string {
+	metadata := make(map[int]map[string]string)
+
+	for i := 0; i < fileCount; i++ {
+		metadata[i] = make(map[string]string)
+
+		// 각 파일별 메타데이터 추출
+		fields := []string{"category", "remarks", "additional_names", "business_content", "purpose"}
+		for _, field := range fields {
+			key := fmt.Sprintf("%s_%d", field, i)
+			if values, exists := form.Value[key]; exists && len(values) > 0 {
+				metadata[i][field] = values[0]
+			} else {
+				// 기본값 설정
+				if field == "category" {
+					metadata[i][field] = "6130" // 기본값: 석식
+				} else {
+					metadata[i][field] = ""
+				}
+			}
+		}
+	}
+
+	return metadata
+}
+
+// 이미지 파일 준비
+func prepareImageFiles(files []*multipart.FileHeader, metadata map[int]map[string]string) ([]ImageFileWithCategory, error) {
+	var imageFiles []ImageFileWithCategory
+
+	for i, file := range files {
+		// 파일 형식 검증
+		if !isSupportedImageFormat(file.Filename) {
+			return nil, fmt.Errorf("파일 '%s'는 지원하지 않는 형식입니다", file.Filename)
+		}
+
+		// 파일 읽기
+		fileReader, err := file.Open()
+		if err != nil {
+			return nil, fmt.Errorf("파일 '%s' 읽기 실패: %v", file.Filename, err)
+		}
+
+		fileData, err := io.ReadAll(fileReader)
+		fileReader.Close()
+		if err != nil {
+			return nil, fmt.Errorf("파일 '%s' 데이터 읽기 실패: %v", file.Filename, err)
+		}
+
+		// 메타데이터 가져오기
+		meta := metadata[i]
+		imageFiles = append(imageFiles, ImageFileWithCategory{
+			ImageFile: ImageFile{
+				Data:     fileData,
+				Filename: file.Filename,
+			},
+			Category:        meta["category"],
+			Remarks:         meta["remarks"],
+			BusinessContent: meta["business_content"],
+			Purpose:         meta["purpose"],
+		})
+	}
+
+	return imageFiles, nil
+}
+
+// OCR 결과 변환
+func convertOCRResults(ocrResults []*SingleImageOCRResultWithCategory, userName string, metadata map[int]map[string]string) []OCRResult {
+	var results []OCRResult
+	excelService := NewExcelService()
+
+	for _, result := range ocrResults {
+		if result.SingleImageOCRResult.Error != nil || result.SingleImageOCRResult.Response == nil || result.SingleImageOCRResult.Response.InferResult != "SUCCESS" {
+			log.Printf("❌ 이미지 %s: 처리 실패 (건너뜀)", result.SingleImageOCRResult.ImageName)
+			continue
+		}
+
+		image := result.SingleImageOCRResult.Response
+		ocrServiceInstance := NewOCRService()
+
+		// 필드에서 값 추출
+		purpose := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용처")
+		amount := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용액")
+		amount = excelService.cleanAmountText(amount)
+
+		issueDate := ocrServiceInstance.ExtractFieldValue(image.Fields, "사용일")
+		issueDate = excelService.convertDateFormat(issueDate)
+
+		payDate := excelService.calculatePaymentDate()
+
+		// 비고 생성
+		remark := generateRemark(result, userName, metadata[result.SingleImageOCRResult.ImageIndex], issueDate, excelService)
+
+		results = append(results, OCRResult{
+			FileName:  result.SingleImageOCRResult.ImageName,
+			Category:  result.Category,
+			Remark:    remark,
+			Purpose:   purpose,
+			Amount:    amount,
+			IssueDate: issueDate,
+			PayDate:   payDate,
+		})
+	}
+
+	return results
+}
+
+// 비고 생성 로직
+func generateRemark(result *SingleImageOCRResultWithCategory, userName string, meta map[string]string, issueDate string, excelService *ExcelService) string {
+	if result.Category == "6320" { // 국내출장
+		businessContent := meta["business_content"]
+		purposeText := meta["purpose"]
+
+		finalUserName := userName
+		if additionalNames := meta["additional_names"]; additionalNames != "" {
+			finalUserName = fmt.Sprintf("%s,%s", userName, additionalNames)
+		}
+
+		return fmt.Sprintf("%s_%s_%s", businessContent, finalUserName, purposeText)
+	}
+
+	// 일반 카테고리 처리
+	if result.Remarks != "" && !strings.Contains(result.Remarks, "임시_") && !strings.Contains(result.Remarks, "MM/DD") {
+		return result.Remarks
+	}
+
+	// 자동 생성
+	finalUserName := userName
+	if additionalNames := meta["additional_names"]; additionalNames != "" {
+		finalUserName = fmt.Sprintf("%s,%s", userName, additionalNames)
+	}
+
+	return excelService.generateDefaultRemark(issueDate, finalUserName, result.Category)
+}
+
+// 결과를 날짜순으로 정렬
+func sortResultsByIssueDate(results []OCRResult) {
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].IssueDate < results[j].IssueDate
+	})
+}
+
+// 환경변수 기본값 설정
+func setDefaultValues(req *UploadRequest) {
 	if req.DepositorDC == "" {
 		req.DepositorDC = getDefaultDepositorDC()
 	}
@@ -298,9 +292,12 @@ func handleExcelDownload(c *fiber.Ctx) error {
 	if req.AttrCD == "" {
 		req.AttrCD = getDefaultAttrCD()
 	}
+}
 
-	// OCR 결과를 Excel 데이터로 변환
+// OCR 결과를 Excel 데이터로 변환
+func convertResultsToExcelData(ocrResults []OCRResult, req *UploadRequest) []*ExcelData {
 	var allExcelData []*ExcelData
+
 	for _, result := range ocrResults {
 		excelData := &ExcelData{
 			CASHCD:      result.Category,
@@ -308,7 +305,7 @@ func handleExcelDownload(c *fiber.Ctx) error {
 			TRNM:        result.Purpose,
 			SUPAM:       result.Amount,
 			VATAM:       "0",
-			ATTRCD:      req.AttrCD, // 사용자 선택 또는 환경변수 기본값
+			ATTRCD:      req.AttrCD,
 			ISSDT:       result.IssueDate,
 			PAYDT:       result.PayDate,
 			BANKCD:      req.BankCD,
@@ -321,19 +318,15 @@ func handleExcelDownload(c *fiber.Ctx) error {
 	}
 
 	// ISS_DT 기준으로 정렬
-	excelService := NewExcelService()
-	excelService.sortByISSDate(allExcelData)
+	sort.Slice(allExcelData, func(i, j int) bool {
+		return allExcelData[i].ISSDT < allExcelData[j].ISSDT
+	})
 
-	// Excel 파일 생성
-	excelFile, err := excelService.CreateExcelFileWithMultipleData(allExcelData)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Excel 파일 생성 실패: " + err.Error(),
-		})
-	}
-	defer excelFile.Close()
+	return allExcelData
+}
 
-	// Excel 파일을 바이트 배열로 변환
+// Excel 파일 전송
+func sendExcelFile(c *fiber.Ctx, excelFile *excelize.File, dataCount int) error {
 	buffer, err := excelFile.WriteToBuffer()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -341,8 +334,7 @@ func handleExcelDownload(c *fiber.Ctx) error {
 		})
 	}
 
-	// 파일 다운로드 응답
-	filename := fmt.Sprintf("ocr_results_%d_files_%s.xlsx", len(allExcelData), time.Now().Format("20060102_150405"))
+	filename := fmt.Sprintf("ocr_results_%d_files_%s.xlsx", dataCount, time.Now().Format("20060102_150405"))
 
 	c.Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))

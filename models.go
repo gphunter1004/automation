@@ -1,6 +1,6 @@
 package main
 
-// OCR 요청 구조체
+// OCR 요청/응답 구조체
 type OCRRequest struct {
 	Version   string     `json:"version"`
 	RequestID string     `json:"requestId"`
@@ -10,13 +10,11 @@ type OCRRequest struct {
 }
 
 type OCRImage struct {
-	Format      string `json:"format"`
-	Name        string `json:"name"`
-	Data        string `json:"data"`
-	TemplateIds int    `json:"templateIds,omitempty"`
+	Format string `json:"format"`
+	Name   string `json:"name"`
+	Data   string `json:"data"`
 }
 
-// OCR 응답 구조체
 type OCRResponse struct {
 	Version   string           `json:"version"`
 	RequestID string           `json:"requestId"`
@@ -66,7 +64,7 @@ type Title struct {
 	InferConfidence float64  `json:"inferConfidence"`
 }
 
-// 업로드 요청 구조체
+// 폼 요청 구조체 (통합)
 type UploadRequest struct {
 	UserName    string `form:"user_name"`
 	AttrCD      string `form:"attr_cd"`
@@ -75,6 +73,11 @@ type UploadRequest struct {
 	EmpCD       string `form:"emp_cd"`
 	BankCD      string `form:"bank_cd"`
 	BANB        string `form:"ba_nb"`
+}
+
+type ExcelDownloadRequest struct {
+	UploadRequest
+	ExcelData string `form:"excel_data"`
 }
 
 // Excel 데이터 구조체
@@ -100,16 +103,16 @@ type ImageFile struct {
 	Filename string
 }
 
-// 카테고리와 비고가 포함된 이미지 파일 정보 구조체
+// 카테고리와 추가 정보가 포함된 이미지 파일 구조체
 type ImageFileWithCategory struct {
-	ImageFile       ImageFile
+	ImageFile
 	Category        string
 	Remarks         string
-	BusinessContent string // 국내출장 전용: 출장내용
-	Purpose         string // 국내출장 전용: 용도
+	BusinessContent string // 국내출장 전용
+	Purpose         string // 국내출장 전용
 }
 
-// 개별 이미지 OCR 결과
+// OCR 결과 구조체
 type SingleImageOCRResult struct {
 	ImageIndex int
 	ImageName  string
@@ -117,26 +120,22 @@ type SingleImageOCRResult struct {
 	Error      error
 }
 
-// 카테고리와 비고가 포함된 개별 이미지 OCR 결과
+// 카테고리가 포함된 OCR 결과 구조체
 type SingleImageOCRResultWithCategory struct {
-	ImageIndex      int
-	ImageName       string
+	SingleImageOCRResult
 	Category        string
 	Remarks         string
-	BusinessContent string // 국내출장 전용: 출장내용
-	Purpose         string // 국내출장 전용: 용도
-	Response        *OCRImageResult
-	Error           error
+	BusinessContent string // 국내출장 전용
+	Purpose         string // 국내출장 전용
 }
 
-// OCR 처리 응답 구조체 (프론트엔드용)
+// 프론트엔드 응답 구조체
 type OCRProcessResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    []OCRResult `json:"data"`
 }
 
-// OCR 결과 데이터 구조체 (프론트엔드용)
 type OCRResult struct {
 	FileName        string `json:"fileName"`
 	Category        string `json:"category"`
@@ -147,16 +146,4 @@ type OCRResult struct {
 	PayDate         string `json:"payDate"`
 	BusinessContent string `json:"businessContent,omitempty"` // 국내출장 전용
 	BusinessPurpose string `json:"businessPurpose,omitempty"` // 국내출장 전용
-}
-
-// Excel 다운로드 요청 구조체
-type ExcelDownloadRequest struct {
-	UserName    string `form:"user_name"`
-	AttrCD      string `form:"attr_cd"`
-	DepositorDC string `form:"depositor_dc"`
-	DeptCD      string `form:"dept_cd"`
-	EmpCD       string `form:"emp_cd"`
-	BankCD      string `form:"bank_cd"`
-	BANB        string `form:"ba_nb"`
-	ExcelData   string `form:"excel_data"`
 }

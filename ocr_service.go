@@ -59,96 +59,34 @@ func (s *OCRService) ProcessMultipleImagesAsyncWithCategory(imageFiles []ImageFi
 			if err != nil {
 				log.Printf("❌ 이미지 %d (%s) 처리 실패: %v", index+1, imgFileWithCategory.ImageFile.Filename, err)
 				results[index] = &SingleImageOCRResultWithCategory{
-					ImageIndex: index,
-					ImageName:  imgFileWithCategory.ImageFile.Filename,
-					Category:   imgFileWithCategory.Category,
-					Remarks:    imgFileWithCategory.Remarks,
-					Response:   nil,
-					Error:      err,
+					SingleImageOCRResult: SingleImageOCRResult{
+						ImageIndex: index,
+						ImageName:  imgFileWithCategory.ImageFile.Filename,
+						Response:   nil,
+						Error:      err,
+					},
+					Category:        imgFileWithCategory.Category,
+					Remarks:         imgFileWithCategory.Remarks,
+					BusinessContent: imgFileWithCategory.BusinessContent,
+					Purpose:         imgFileWithCategory.Purpose,
 				}
 				return
 			}
 
 			log.Printf("✅ 이미지 %d (%s) 처리 완료", index+1, imgFileWithCategory.ImageFile.Filename)
 			results[index] = &SingleImageOCRResultWithCategory{
-				ImageIndex: index,
-				ImageName:  imgFileWithCategory.ImageFile.Filename,
-				Category:   imgFileWithCategory.Category,
-				Remarks:    imgFileWithCategory.Remarks,
-				Response:   result,
-				Error:      nil,
+				SingleImageOCRResult: SingleImageOCRResult{
+					ImageIndex: index,
+					ImageName:  imgFileWithCategory.ImageFile.Filename,
+					Response:   result,
+					Error:      nil,
+				},
+				Category:        imgFileWithCategory.Category,
+				Remarks:         imgFileWithCategory.Remarks,
+				BusinessContent: imgFileWithCategory.BusinessContent,
+				Purpose:         imgFileWithCategory.Purpose,
 			}
 		}(i, imageFileWithCategory)
-	}
-
-	// 모든 고루틴 완료 대기
-	wg.Wait()
-	totalDuration := time.Since(startTime)
-
-	// 결과 요약
-	successCount := 0
-	failCount := 0
-	for _, result := range results {
-		if result.Error == nil {
-			successCount++
-		} else {
-			failCount++
-		}
-	}
-
-	log.Printf("=== 비동기 OCR 처리 완료 ===")
-	log.Printf("총 소요 시간: %v", totalDuration)
-	log.Printf("성공: %d개, 실패: %d개", successCount, failCount)
-
-	if successCount == 0 {
-		return nil, fmt.Errorf("모든 이미지 OCR 처리에 실패했습니다")
-	}
-
-	return results, nil
-}
-
-// 여러 이미지를 비동기로 개별 OCR API 호출하고 결과 반환 (기존 호환성)
-func (s *OCRService) ProcessMultipleImagesAsync(imageFiles []ImageFile) ([]*SingleImageOCRResult, error) {
-	if len(imageFiles) == 0 {
-		return nil, fmt.Errorf("처리할 이미지가 없습니다")
-	}
-
-	log.Printf("=== 비동기 OCR 처리 시작 ===")
-	log.Printf("처리할 이미지 수: %d개 (각각 개별 API 호출)", len(imageFiles))
-
-	var wg sync.WaitGroup
-	results := make([]*SingleImageOCRResult, len(imageFiles))
-	startTime := time.Now()
-
-	// 각 이미지에 대해 비동기로 OCR 처리
-	for i, imageFile := range imageFiles {
-		wg.Add(1)
-		go func(index int, imgFile ImageFile) {
-			defer wg.Done()
-
-			log.Printf("이미지 %d/%d 처리 시작: %s", index+1, len(imageFiles), imgFile.Filename)
-
-			// 개별 이미지 OCR 처리
-			result, err := s.processSingleImage(imgFile, index)
-			if err != nil {
-				log.Printf("❌ 이미지 %d (%s) 처리 실패: %v", index+1, imgFile.Filename, err)
-				results[index] = &SingleImageOCRResult{
-					ImageIndex: index,
-					ImageName:  imgFile.Filename,
-					Response:   nil,
-					Error:      err,
-				}
-				return
-			}
-
-			log.Printf("✅ 이미지 %d (%s) 처리 완료", index+1, imgFile.Filename)
-			results[index] = &SingleImageOCRResult{
-				ImageIndex: index,
-				ImageName:  imgFile.Filename,
-				Response:   result,
-				Error:      nil,
-			}
-		}(i, imageFile)
 	}
 
 	// 모든 고루틴 완료 대기
@@ -183,8 +121,7 @@ func (s *OCRService) processSingleImage(imageFile ImageFile, index int) (*OCRIma
 
 	// Base64 인코딩
 	encodedImage := base64.StdEncoding.EncodeToString(imageFile.Data)
-	encodedLength := len(encodedImage)
-	log.Printf("Base64 인코딩 완료: %d characters", encodedLength)
+	log.Printf("Base64 인코딩 완료: %d characters", len(encodedImage))
 
 	// OCR 요청 데이터 생성 (단일 이미지)
 	requestId := uuid.New().String()

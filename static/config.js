@@ -1,4 +1,4 @@
-// config.js - 애플리케이션 설정 및 상수
+// config.js - 애플리케이션 설정 및 상수 (간소화)
 
 // 전역 상수
 const CONFIG = {
@@ -13,23 +13,13 @@ const CONFIG = {
     // API 엔드포인트
     API: {
         PROCESS_OCR: '/api/process-ocr',
-        DOWNLOAD_EXCEL: '/api/download-excel',
-        HEALTH: '/api/health'
+        DOWNLOAD_EXCEL: '/api/download-excel'
     },
     
     // 쿠키 설정
     COOKIE: {
         EXPIRY_DAYS: 30,
         PREFIX: 'ocr_form_'
-    },
-    
-    // CSS 클래스
-    CSS_CLASSES: {
-        DRAG_OVER: 'drag-over',
-        FILE_ITEM: 'file-item',
-        ERROR: 'error',
-        SUCCESS: 'success',
-        LOADING: 'loading'
     }
 };
 
@@ -43,30 +33,23 @@ const CATEGORY_OPTIONS = [
 ];
 
 // 폼 필드 정의
-const FORM_FIELDS = [
-    'user_name',
-    'attr_cd',
-    'depositor_dc',
-    'dept_cd',
-    'emp_cd',
-    'bank_cd',
-    'ba_nb'
-];
-
-// 필수 필드 정의
+const FORM_FIELDS = ['user_name', 'attr_cd', 'depositor_dc', 'dept_cd', 'emp_cd', 'bank_cd', 'ba_nb'];
 const REQUIRED_FIELDS = ['user_name'];
 
 // 키워드 기반 카테고리 매핑
 const CATEGORY_KEYWORDS = {
-    '6320': ['국내출장', '출장', 'business_trip', 'businesstrip'],
-    '6310': ['교통', '택시', '지하철', '버스', 'transport'],
-    '6110': ['조식', '아침', 'breakfast'],
-    '6120': ['중식', '점심', 'lunch'],
-    '6130': ['석식', '저녁', 'dinner']
+    '6320': ['국내출장', '출장'],
+    '6310': ['교통', '택시', '지하철', '버스'],
+    '6110': ['조식', '아침'],
+    '6120': ['중식', '점심'],
+    '6130': ['석식', '저녁']
 };
 
-// 날짜 포맷 정규식
+// 날짜 포맷 정규식 (통합)
 const DATE_PATTERNS = {
+    YYYY_M_D_TIME: /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*\d{1,2}:\s*\d{1,2}:\s*\d{1,2}/,
+    YYYY_M_D_TIME_SHORT: /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.\s*\d{1,2}:\s*\d{1,2}/,
+    YYYY_M_D: /(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/,
     YYYY_MM_DD: /(\d{4})\.(\d{2})\.(\d{2})/,
     YY_MM_DD_TIME: /(\d{2})\.(\d{2})\.(\d{2})\s+\d{2}:\d{2}/,
     YY_MM_DD_NO_SPACE: /(\d{2})\.(\d{2})\.(\d{2})\d{2}:\d{2}/,
@@ -74,43 +57,27 @@ const DATE_PATTERNS = {
     YYYYMMDD: /(\d{8})/
 };
 
-// 유틸리티 함수
+// 유틸리티 함수 (통합)
 const UTILS = {
-    // 파일 이름에서 확장자 추출
+    // 파일 관련
     getFileExtension(filename) {
         return filename.toLowerCase().substring(filename.lastIndexOf('.'));
     },
     
-    // 파일 형식 확인
     isSupportedFileType(file) {
         return CONFIG.SUPPORTED_FILE_TYPES.includes(file.type) || 
                CONFIG.SUPPORTED_EXTENSIONS.includes(this.getFileExtension(file.name));
     },
     
-    // 파일 크기 확인
     isValidFileSize(file) {
         return file.size <= CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024;
     },
     
-    // MB 단위로 파일 크기 포맷
     formatFileSize(bytes) {
         return (bytes / 1024 / 1024).toFixed(2) + ' MB';
     },
     
-    // 디바운스 함수
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-    
-    // 요소 표시/숨기기
+    // DOM 관련
     toggleElement(elementId, show) {
         const element = document.getElementById(elementId);
         if (element) {
@@ -118,7 +85,6 @@ const UTILS = {
         }
     },
     
-    // 폼 값 가져오기/설정
     getFormValue(elementId) {
         const element = document.getElementById(elementId);
         return element ? element.value.trim() : '';
@@ -129,6 +95,19 @@ const UTILS = {
         if (element) {
             element.value = value;
         }
+    },
+    
+    // 기타
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 };
 

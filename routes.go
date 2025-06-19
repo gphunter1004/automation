@@ -11,12 +11,13 @@ func setupRoutes(app *fiber.App) {
 	// API 라우트 그룹
 	api := app.Group("/api")
 
-	// 새로운 2단계 플로우 엔드포인트
+	// OCR 처리 엔드포인트
 	api.Post("/process-ocr", func(c *fiber.Ctx) error {
 		log.Printf("🎯 /api/process-ocr 엔드포인트 호출됨")
 		return handleOCRProcess(c)
 	})
 
+	// Excel 다운로드 엔드포인트
 	api.Post("/download-excel", func(c *fiber.Ctx) error {
 		log.Printf("📄 /api/download-excel 엔드포인트 호출됨")
 		return handleExcelDownload(c)
@@ -79,8 +80,10 @@ func setupRoutes(app *fiber.App) {
 					"description": "서버 상태 확인",
 				},
 			},
-			"supported_formats": []string{"jpg", "jpeg", "png", "pdf", "tif", "tiff"},
+			"supported_formats": SUPPORTED_IMAGE_FORMATS,
 			"categories": map[string]string{
+				"6110": "조식",
+				"6120": "중식",
 				"6130": "석식",
 				"6310": "교통정산",
 				"6320": "국내출장",
