@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR to Excel 변환</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="base-styles.css">
+    <link rel="stylesheet" href="layout-styles.css">
 </head>
 <body>
     <div class="container">
@@ -47,84 +48,76 @@
         </div>
         
         <form id="uploadForm" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="user_name">이름 *</label>
-                <input type="text" id="user_name" name="user_name" 
-                       placeholder="이름을 입력하세요" required>
-                <div class="file-info">
-                    RMK_DC 기본값 생성에 사용됩니다
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="attr_cd">매출전표 유형 (ATTR_CD)</label>
-                <select id="attr_cd" name="attr_cd">
-                    <option value="8A" selected>신용카드매출전표(개인)</option>
-                    <option value="8">신용카드매출전표(법인)</option>
-                </select>
-                <div class="file-info">
-                    신용카드매출전표 유형을 선택하세요 (기본값: 개인)
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="depositor_dc">예금주명 (DEPOSITOR_DC)</label>
-                <input type="text" id="depositor_dc" name="depositor_dc" 
-                       placeholder="예금주명을 입력하세요 (선택사항)">
-                <div class="file-info">
-                    환경변수 DEFAULT_DEPOSITOR_DC로 기본값 설정 가능 (선택사항)
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="dept_cd">부서코드 (DEPT_CD)</label>
-                <input type="text" id="dept_cd" name="dept_cd" 
-                       placeholder="부서코드를 입력하세요 (선택사항)">
-                <div class="file-info">
-                    환경변수 DEFAULT_DEPT_CD로 기본값 설정 가능 (선택사항)
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="emp_cd">사원코드 (EMP_CD)</label>
-                <input type="text" id="emp_cd" name="emp_cd" 
-                       placeholder="사원코드를 입력하세요 (선택사항)">
-                <div class="file-info">
-                    환경변수 DEFAULT_EMP_CD로 기본값 설정 가능 (선택사항)
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="bank_cd">은행코드 (BANK_CD)</label>
-                <input type="text" id="bank_cd" name="bank_cd" 
-                       placeholder="은행코드를 입력하세요 (선택사항)">
-                <div class="file-info">
-                    환경변수 DEFAULT_BANK_CD로 기본값 설정 가능 (선택사항)
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="ba_nb">계좌번호 (BA_NB)</label>
-                <input type="text" id="ba_nb" name="ba_nb" 
-                       placeholder="계좌번호를 입력하세요 (선택사항)">
-                <div class="file-info">
-                    환경변수 DEFAULT_BA_NB로 기본값 설정 가능 (선택사항)
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="images">이미지 파일 (여러 개 선택 가능) *</label>
-                <input type="file" id="images" name="images" multiple 
-                       accept=".jpg,.jpeg,.png,.pdf,.tif,.tiff" required>
-                <div class="file-info">
-                    <span>지원 형식: JPG, JPEG, PNG, PDF, TIF, TIFF (각 파일 최대 50MB, 최대 5개 파일)</span><br>
-                    <span>💡 <strong>드래그앤드롭</strong>으로 파일을 끌어와도 됩니다!</span>
-                </div>
-                <div id="fileList" class="file-list"></div>
+            <!-- 기본 정보 섹션 - 2열 레이아웃 -->
+            <div class="basic-info-section">
+                <h3>📝 기본 정보</h3>
                 
-                <!-- 드래그앤드롭 상태 표시 (디버깅용) -->
-                <div id="dragDropStatus" class="drag-drop-status" style="display: none;">
-                    <small>드래그앤드롭 상태: <span id="statusText">대기중</span></small>
+                <!-- 모든 기본 정보 1행 -->
+                <div class="form-row single-row">
+                    <div class="form-group">
+                        <label for="user_name">이름 *</label>
+                        <input type="text" id="user_name" name="user_name" 
+                               placeholder="이름을 입력하세요" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="attr_cd">매출전표 유형</label>
+                        <select id="attr_cd" name="attr_cd">
+                            <option value="8A" selected>개인 신용카드</option>
+                            <option value="8">법인 신용카드</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dept_cd">부서코드</label>
+                        <input type="text" id="dept_cd" name="dept_cd" 
+                               placeholder="부서코드 (선택사항)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emp_cd">사원코드</label>
+                        <input type="text" id="emp_cd" name="emp_cd" 
+                               placeholder="사원코드 (선택사항)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="depositor_dc">예금주명</label>
+                        <input type="text" id="depositor_dc" name="depositor_dc" 
+                               placeholder="예금주명 (선택사항)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bank_cd">은행코드</label>
+                        <input type="text" id="bank_cd" name="bank_cd" 
+                               placeholder="은행코드 (선택사항)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ba_nb">계좌번호</label>
+                        <input type="text" id="ba_nb" name="ba_nb" 
+                               placeholder="계좌번호 (선택사항)">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 파일 업로드 섹션 -->
+            <div class="file-upload-section">
+                <h3>📁 파일 업로드</h3>
+                
+                <div class="form-group">
+                    <label for="images">이미지 파일 (여러 개 선택 가능) *</label>
+                    <input type="file" id="images" name="images" multiple 
+                           accept=".jpg,.jpeg,.png,.pdf,.tif,.tiff" required>
+                    <div class="file-info">
+                        <span>지원 형식: JPG, JPEG, PNG, PDF, TIF, TIFF (각 파일 최대 50MB, 최대 5개 파일)</span><br>
+                        <span>💡 <strong>드래그앤드롭</strong>으로 파일을 끌어와도 됩니다!</span>
+                    </div>
+                    <div id="fileList" class="file-list"></div>
+                    
+                    <!-- 드래그앤드롭 상태 표시 (디버깅용) -->
+                    <div id="dragDropStatus" class="drag-drop-status" style="display: none;">
+                        <small>드래그앤드롭 상태: <span id="statusText">대기중</span></small>
+                    </div>
                 </div>
             </div>
             
@@ -160,6 +153,29 @@
                         <!-- OCR 결과 데이터가 여기에 추가됩니다 -->
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- 추가 파일 업로드 섹션 -->
+            <div class="additional-upload-section">
+                <h3>📁 추가 파일 OCR 처리</h3>
+                <p class="additional-description">
+                    추가 파일들을 업로드하면 기존 결과에 이어서 추가됩니다.
+                </p>
+                
+                <div class="form-group">
+                    <label for="additionalImages">추가 이미지 파일 (여러 개 선택 가능)</label>
+                    <input type="file" id="additionalImages" name="additionalImages" multiple 
+                           accept=".jpg,.jpeg,.png,.pdf,.tif,.tiff">
+                    <div class="file-info">
+                        <span>현재 결과에 추가로 OCR 처리할 파일들을 선택하세요</span><br>
+                        <span>💡 드래그앤드롭도 지원됩니다!</span>
+                    </div>
+                    <div id="additionalFileList" class="file-list"></div>
+                </div>
+                
+                <button type="button" id="additionalOcrBtn" class="additional-ocr-button">
+                    ➕ 추가 OCR 처리하기
+                </button>
             </div>
             
             <div class="download-section">

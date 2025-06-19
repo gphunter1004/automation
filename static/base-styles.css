@@ -1,0 +1,455 @@
+/* base-styles.css - 기본 스타일 및 컴포넌트 */
+
+/* 기본 스타일 */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+    box-sizing: border-box;
+}
+
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.description {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+/* 폼 기본 스타일 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+input[type="text"], input[type="file"], select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+input[type="file"] {
+    padding: 20px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    text-align: center;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+    border-color: #2196f3;
+    background: #f0f8ff;
+}
+
+select {
+    background-color: white;
+    cursor: pointer;
+}
+
+select:focus, input[type="text"]:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* 필드 정보 텍스트 */
+.field-info {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    line-height: 1.3;
+}
+
+/* 버튼 스타일 */
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* 추가 OCR 버튼 */
+.additional-ocr-button {
+    background-color: #28a745;
+    margin-bottom: 20px;
+}
+
+.additional-ocr-button:hover {
+    background-color: #218838;
+}
+
+.additional-ocr-button:disabled {
+    background-color: #6c757d;
+}
+
+.download-button, .reset-button {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.download-button {
+    background-color: #28a745;
+    color: white;
+}
+
+.download-button:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+.download-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.reset-button {
+    background-color: #6c757d;
+    color: white;
+}
+
+.reset-button:hover {
+    background-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+/* 메시지 스타일 */
+.error {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+    display: none;
+}
+
+.success {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+    display: none;
+}
+
+/* 쿠키 로드 메시지 스타일 */
+.cookie-load-message {
+    background: linear-gradient(135deg, #e8f5e8, #d4f1d4);
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin: 20px 0;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.message-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.message-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.message-text {
+    flex: 1;
+    color: #155724;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.message-close {
+    background: none;
+    border: none;
+    color: #155724;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.message-close:hover {
+    background-color: rgba(21, 87, 36, 0.1);
+}
+
+/* 로딩 스타일 */
+.loading {
+    display: none;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 2s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 파일 관련 기본 스타일 */
+.file-info {
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.file-list {
+    margin-top: 10px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    display: none;
+}
+
+.file-name {
+    font-weight: 500;
+    margin-bottom: 5px;
+    word-break: break-all;
+}
+
+.file-size {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+/* 자동 감지 정보 스타일 */
+.auto-detected-info {
+    margin-top: 3px;
+    padding: 2px 6px;
+    background-color: #e8f5e8;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+/* 카테고리 및 입력 필드 공통 스타일 */
+.category-label, 
+.additional-names-label, 
+.business-content-label, 
+.purpose-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    margin: 0;
+}
+
+.business-content-label::after,
+.purpose-label::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.category-select, 
+.additional-names-input, 
+.business-content-input, 
+.purpose-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.category-select:focus, 
+.additional-names-input:focus, 
+.business-content-input:focus, 
+.purpose-input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.additional-names-input, 
+.business-content-input, 
+.purpose-input {
+    cursor: text;
+}
+
+/* 국내출장 필수 필드 스타일 */
+.business-content-input:invalid,
+.purpose-input:invalid {
+    border-color: #dc3545;
+}
+
+.business-content-input:valid,
+.purpose-input:valid {
+    border-color: #28a745;
+}
+
+.remove-file {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: background-color 0.3s;
+    align-self: flex-start;
+}
+
+.remove-file:hover {
+    background: #c82333;
+}
+
+/* 개발자 섹션 스타일 */
+.dev-section {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #fff3cd;
+    border-radius: 5px;
+    border-left: 4px solid #ffc107;
+}
+
+.dev-section h4 {
+    margin: 0 0 10px 0;
+    color: #856404;
+}
+
+.dev-section button {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.dev-section button:hover {
+    opacity: 0.8;
+}
+
+.dev-section button:nth-child(2) {
+    background: #dc3545;
+}
+
+.dev-section button:nth-child(3) {
+    background: #28a745;
+}
+
+/* 드래그 앤 드롭 스타일 */
+.container.drag-over {
+    background-color: #e3f2fd !important;
+    border: 3px dashed #2196f3 !important;
+    box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3) !important;
+    transform: scale(1.02);
+}
+
+.container.drag-over::before {
+    content: "📁 파일을 여기에 드래그하세요";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    padding: 20px 40px;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.container.drag-over > *:not(::before) {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+body.drag-active {
+    background-color: #f0f8ff;
+}
+
+.drag-drop-status {
+    margin-top: 5px;
+    padding: 5px 10px;
+    background: #f8f9fa;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #666;
+}
+
+.drag-drop-status.active {
+    background: #e3f2fd;
+    color: #1976d2;
+}
